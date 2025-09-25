@@ -1,0 +1,63 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "天气监控中心",
+    "tags": ["weather", "monitoring"],
+    "style": "dark",
+    "timezone": "Asia/Shanghai",
+    "panels": [
+      {
+        "id": 1,
+        "title": "各城市当前天气状况",
+        "type": "table",
+        "datasource": "PostgreSQL",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+        "targets": [
+          {
+            "rawSql": "SELECT * FROM latest_weather ORDER BY city_name",
+            "format": "table"
+          }
+        ],
+        "styles": [
+          {
+            "alias": "城市",
+            "pattern": "city_name",
+            "type": "string"
+          },
+          {
+            "alias": "温度",
+            "pattern": "temp",
+            "type": "number",
+            "unit": "celsius",
+            "colorMode": "value",
+            "thresholds": [
+              {"value": null, "color": "blue"},
+              {"value": 0, "color": "light-blue"},
+              {"value": 20, "color": "green"},
+              {"value": 30, "color": "yellow"},
+              {"value": 35, "color": "red"}
+            ]
+          }
+        ]
+      }
+    ],
+    "time": {"from": "now-24h", "to": "now"},
+    "timepicker": {
+      "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"]
+    },
+    "templating": {
+      "list": [
+        {
+          "name": "city",
+          "type": "query",
+          "datasource": "PostgreSQL",
+          "query": "SELECT DISTINCT city_name FROM weather_now ORDER BY city_name",
+          "refresh": 1,
+          "includeAll": true,
+          "multi": true,
+          "allValue": ".*"
+        }
+      ]
+    }
+  }
+}

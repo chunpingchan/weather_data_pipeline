@@ -1,0 +1,93 @@
+# 定义网络，让容器可以通过容器名相互通信
+networks:
+  weather-net:
+    driver: bridge
+
+services:
+  # PostgreSQL 数据库服务
+  postgres:
+    image: postgres:13-alpine  # 使用alpine版本，更轻量
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      TZ: Asia/Shanghai  # 设置时区
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # 持久化数据卷
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql  # 初始化脚本
+    ports:
+      - "5432:5432"  # 暴露端口便于本地连接测试
+    networks:
+      - weather-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped  # 自动重启除非手动停止
+
+  # Airflow 调度服务
+  airflow:
+    build: ./airflow  # 使用自定义Dockerfile构建
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__CORE__FERNET_KEY: ${FERNET_KEY:-}  # 加密密钥
+      QWEATHER_API_KEY: ${QWEATHER_API_KEY}
+      QWEATHER_API_HOST: ${QWEATHER_API_HOST}
+      QWEATHER_LOCATIONS: ${QWEATHER_LOCATIONS}
+      QWEATHER_LOCATION_NAMES: ${QWEATHER_LOCATION_NAMES}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      TZ: Asia/Shanghai  # 设置容器系统时区
+      AIRFLOW__CORE__DEFAULT_TIMEZONE: Asia/Shanghai
+      AIRFLOW__CORE__DEFAULT_UI_TIMEZONE: Asia/Shanghai  # Web界面显示时区
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags  # 挂载DAG文件
+      - ./scripts:/opt/airflow/scripts  # 挂载Python脚本
+      - airflow_logs:/opt/airflow/logs  # 日志持久化
+      - ./config/airflow.cfg:/opt/airflow/airflow.cfg  # 自定义配置
+    ports:
+      - "8080:8080"  # Web界面端口
+    networks:
+      - weather-net
+    depends_on:
+      postgres:
+        condition: service_healthy  # 等待数据库健康后再启动
+    restart: unless-stopped
+    # 覆盖默认命令，初始化数据库并启动服务
+    command: >
+      bash -c "airflow db init &&
+      airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email chunpingchan@163.com &&
+      (airflow scheduler & airflow webserver)"
+
+  # Grafana 可视化服务
+  grafana:
+    image: grafana/grafana:9.5.2  # 指定版本确保稳定性
+    environment:
+      GF_SECURITY_ADMIN_USER: admin  # 初始管理员名称
+      GF_SECURITY_ADMIN_PASSWORD: admin  # 初始管理员密码
+      GF_USERS_ALLOW_SIGN_UP: false  # 禁止用户注册
+      GF_INSTALL_PLUGINS: grafana-clock-panel  # 安装额外插件
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning  # 自动配置
+      - grafana_data:/var/lib/grafana  # 数据持久化
+      - ./config/grafana.ini:/etc/grafana/grafana.ini  # 自定义配置
+    ports:
+      - "3000:3000"
+    networks:
+      - weather-net
+    depends_on:
+      - postgres  # 依赖数据库
+    restart: unless-stopped
+
+# 定义卷，实现数据持久化
+volumes:
+  postgres_data:
+    driver: local
+  airflow_logs:
+    driver: local
+  grafana_data:
+    driver: local
