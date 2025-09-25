@@ -1,0 +1,10 @@
+# 忽略所有日志文件
+*.log
+
+# 忽略文件夹
+/temp/
+/build/
+
+# 忽略特定文件
+config.ini
+.env
