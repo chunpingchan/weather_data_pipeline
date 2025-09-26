@@ -8,3 +8,4 @@
 # 忽略特定文件
 config.ini
 .env
+*.env
