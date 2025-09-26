@@ -5,7 +5,35 @@
 /temp/
 /build/
 
-# 忽略特定文件
+# 忽略配置文件和环境变量
 config.ini
 .env
 *.env
+
+# Python字节码和编译文件
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+
+# 构建和分发目录
+build/
+dist/
+*.egg-info/
+*.egg
+
+# 虚拟环境
+venv/
+.venv/
+env/
+
+# 编辑器/IDE文件
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 环境变量文件
+.env
+.env.local
