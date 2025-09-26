@@ -9,6 +9,7 @@
 config.ini
 .env
 *.env
+.env.local
 
 # Python字节码和编译文件
 __pycache__/
@@ -36,7 +37,3 @@ env/
 .vscode/
 *.swp
 *.swo
-
-# 环境变量文件
-.env
-.env.local
