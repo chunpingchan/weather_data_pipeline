@@ -19,11 +19,11 @@ RUN apt-get update && \
 
 # 创建日志目录并设置权限
 RUN set -eux; \
-    (getent group 50000 || groupadd -g 50000 airflow) && \
-    (id -u 50000 || useradd -u 50000 -g airflow airflow) && \
+    (getent group ${AIRFLOW_GID:-50000} || groupadd -g ${AIRFLOW_GID:-50000} airflow) && \
+    (id -u ${AIRFLOW_UID:-50000} || useradd -u ${AIRFLOW_UID:-50000} -g airflow airflow) && \
     mkdir -p /opt/airflow/logs && \
-    chown -R 50000:50000 /opt/airflow/logs && \
-	ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
+    chown -R ${AIRFLOW_UID:-50000}:${AIRFLOW_GID:-50000} /opt/airflow/logs && \
+    ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
     echo "Asia/Shanghai" > /etc/timezone
 
 # 切换回airflow用户

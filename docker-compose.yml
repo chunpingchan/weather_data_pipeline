@@ -6,7 +6,8 @@ networks:
 services:
   # PostgreSQL 数据库服务
   postgres:
-    image: postgres:13-alpine  # 使用alpine版本，更轻量
+    image: postgres:16-alpine  # 使用alpine版本，更轻量
+    container_name: weather-postgres
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -29,6 +30,7 @@ services:
   # Airflow 调度服务
   airflow:
     build: ./airflow  # 使用自定义Dockerfile构建
+    container_name: weather-airflow
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
@@ -57,6 +59,11 @@ services:
       postgres:
         condition: service_healthy  # 等待数据库健康后再启动
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     # 覆盖默认命令，初始化数据库并启动服务
     command: >
       bash -c "airflow db init &&
@@ -65,7 +72,8 @@ services:
 
   # Grafana 可视化服务
   grafana:
-    image: grafana/grafana:9.5.2  # 指定版本确保稳定性
+    image: grafana/grafana:11.2.3  # 指定版本确保稳定性
+    container_name: weather-grafana
     environment:
       GF_SECURITY_ADMIN_USER: admin  # 初始管理员名称
       GF_SECURITY_ADMIN_PASSWORD: admin  # 初始管理员密码

@@ -14,7 +14,7 @@ datasources:
     editable: true
     jsonData:
       sslmode: disable
-      postgresVersion: 1300
+      postgresVersion: 1600
       timescaledb: false
       maxOpenConns: 10
       maxIdleConns: 10
